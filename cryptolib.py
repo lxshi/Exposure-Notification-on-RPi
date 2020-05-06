@@ -9,7 +9,7 @@ from math import ceil
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 
-EKRollingPeriod = 144
+TEKRollingPeriod = 144
 
 
 # AES-128 ECB Mode Encryption
@@ -76,7 +76,7 @@ def getENIntervalNum():
 # Generate Temporary Exposure Key (16 bytes)
 def getTEK(outputLength):
     tek = crng(outputLength)
-    i = (getENIntervalNum()//EKRollingPeriod) * EKRollingPeriod
+    i = (getENIntervalNum()//TEKRollingPeriod) * TEKRollingPeriod
     return tek, i
 
 
@@ -93,7 +93,7 @@ def padData():
     ENIN = getENIntervalNum()
     ENIN_bytes = ENIN.to_bytes(4, byteorder='little')
     return info_bytes + zero_bytes + ENIN_bytes
-
+  
 # Generate Rolling Proximity Identifier 
 def getRPI(rpik):
     paddedData = padData()
@@ -104,6 +104,10 @@ def getAEMK(tek):
     info_bytes = 'CT-AEMK'.encode('utf-8')
     return hkdf(tek, '', info_bytes, 16)
 
-# Associated Encrypted Metadata
+# Generate Associated Encrypted Metadata
 def getAEM(aemk, rpi, metadata):
     return aes_ctr_encrypt(aemk, rpi, metadata)
+
+# Decrypt Metadata
+def getMetadata(aemk, rpi, ciphered_metadata):
+    return aes_ctr_decrypt(aemk, rpi, ciphered_metadata)
